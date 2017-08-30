@@ -50,7 +50,14 @@ class App extends Component {
         }
         this.setState({ btn_lock: false });
       })
-      .catch((error) => console.log('errors: ' + error));
+      .catch((error) => {
+        this.setState({
+          errors: { fail: error },
+          btn_lock: false,
+          alert_visible: true
+        })
+        console.log('errors: ' + error)
+    });
   }
 
   render() {
