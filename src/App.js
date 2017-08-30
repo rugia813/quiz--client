@@ -1,36 +1,58 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
-import { Button, Header, Image, Modal } from 'semantic-ui-react'
+import { Button, Header, Image, Modal, Message } from 'semantic-ui-react';
+import { LoginForm, RegisterForm } from './management/Auth.js';
 
 class App extends Component {
   constructor() {
     super();
     this.state = {
       errors: [],
-      user: null
+      user: null,
+      btn_lock: false,
+      alert_visible: false
     }
+    
+    this.handleRegister = this.handleRegister.bind(this)
+  }
+
+  handleRegister(email, name, password, password_confirmation){
+    if (this.state.btn_lock) return;
+
+    this.setState({ btn_lock: true, alert_visible: false });
+
     fetch('http://quiz.net/api/register', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-      }
+      },
+      body: JSON.stringify({
+        'email': email,
+        'name': name,
+        'password': password,
+        'password_confirmation': password_confirmation
+      })
     })
       .then(response => {
         const status = response.status;
-        if (status == 200) {
+        if (status == 201) {
           response.json().then((json) => {
-            this.setState({ user: json })
+            this.setState({ user: json.data })
           });
         } else {
           response.json().then((json) => {
-            this.setState({ errors: json })
+            this.setState({
+              errors: json,
+              alert_visible: true
+            })
           });
         }
+        this.setState({ btn_lock: false });
       })
       .catch((error) => console.log('errors: ' + error));
   }
+
   render() {
     let errors = []
     for(let i in this.state.errors){
@@ -39,21 +61,16 @@ class App extends Component {
     errors = errors.map((e, i) => { return <li value="*" role="listitem" className="" key={i}>{e}</li>})
     return (
       <div className="App">
-        <ul role="list" className="ui list">
-          {errors}
-        </ul>
-        <Modal trigger={<Button>Show Modal</Button>}>
-          <Modal.Header>Select a Photo</Modal.Header>
-          <Modal.Content image>
-            <Image wrapped size='medium' src='/assets/images/avatar/large/rachel.png' />
-            <Modal.Description>
-              <Header>Default Profile Image</Header>
-              <p>We've found the following gravatar image associated with your e-mail address.</p>
-              <p>Is it okay to use this photo?</p>
-            </Modal.Description>
-          </Modal.Content>
-        </Modal>
-        {this.state.user}
+        <RegisterForm click={this.handleRegister} lock={this.state.btn_lock}>
+          <Message
+            error
+            floating
+            hidden={!this.state.alert_visible}
+            list={errors}
+            onDismiss={ ()=>{ this.setState({ alert_visible: false }) } }
+          />
+        </ RegisterForm>
+        <Message list={this.state.user && this.state.user.name} success />
       </div>
     );
   }
